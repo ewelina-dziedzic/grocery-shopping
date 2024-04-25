@@ -4,7 +4,6 @@ import webbrowser
 import time
 import urllib.parse
 
-# TODO connect to notion's shopping list
 # TODO connect to todoist's grocery list
 # TODO think about quantity
 
@@ -12,12 +11,43 @@ import urllib.parse
 username = ''
 password = ''
 notion_secret = ''
-products_to_buy = []
 
 # consts
 base_url = 'https://www.frisco.pl/app/commerce'
 
-# TODO get products to buy from notion
+# get products to buy from notion
+products_to_buy = []
+url = 'https://api.notion.com/v1/databases/6a77f92ad67a49d2be9fefdb4048bc9a/query?filter_properties=title'
+headers = {
+    'Authorization': f'Bearer {notion_secret}',
+    'Notion-Version': '2022-06-28',
+    'Content-Type': 'application/json'
+}
+data = {
+  'filter': {
+    'and': [
+      {
+        'property': 'Got it',
+        'checkbox': {
+          'equals': False  
+        }
+      },
+      {
+        'property': 'To buy',
+        'checkbox': {
+          'equals': True  
+        }
+      }
+    ]
+  }
+}
+response = requests.post(url, data=json.dumps(data), headers=headers)
+response.raise_for_status()
+response_json = response.json()
+ingredients = response_json['results']
+for ingredient in ingredients:
+  ingredient_name = ingredient['properties']['Ingredient']['title'][0]['plain_text']
+  products_to_buy.append(ingredient_name)
 
 # get access token and user id
 url = f'{base_url}/connect/token'
