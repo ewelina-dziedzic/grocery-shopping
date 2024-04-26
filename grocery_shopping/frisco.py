@@ -4,13 +4,13 @@ import webbrowser
 import time
 import urllib.parse
 
-# TODO connect to todoist's grocery list
 # TODO think about quantity
 
 # input
 username = ''
 password = ''
 notion_secret = ''
+todoist_secret = ''
 
 # consts
 base_url = 'https://www.frisco.pl/app/commerce'
@@ -48,6 +48,21 @@ ingredients = response_json['results']
 for ingredient in ingredients:
   ingredient_name = ingredient['properties']['Ingredient']['title'][0]['plain_text']
   products_to_buy.append(ingredient_name)
+
+# get products from todoist
+url = ' https://api.todoist.com/rest/v2/tasks?project_id=2281492801'
+headers = {
+    'Authorization': f'Bearer {todoist_secret}'
+}
+response = requests.get(url, headers=headers)
+response.raise_for_status()
+response_json = response.json()
+tasks = response_json
+for task in tasks:
+  product_name = task['content']
+  products_to_buy.append(product_name)
+
+print("PRODUCTS TO BUY", products_to_buy)
 
 # get access token and user id
 url = f'{base_url}/connect/token'
