@@ -3,21 +3,29 @@ import json
 import webbrowser
 import time
 import urllib.parse
+import configparser
 
 # TODO think about quantity
 
 # input
-username = ''
-password = ''
-notion_secret = ''
-todoist_secret = ''
+config = configparser.ConfigParser()
+config.read('config.ini')
+
+frisco_username = config['frisco']['username']
+frisco_password = config['frisco']['password']
+
+notion_secret = config['notion']['secret']
+notion_database_id = config['notion']['database_id']
+
+todoist_secret = config['todoist']['secret']
+todoist_project_id = config['todoist']['project_id']
 
 # consts
-base_url = 'https://www.frisco.pl/app/commerce'
+frisco_base_url = 'https://www.frisco.pl/app/commerce'
 
 # get products to buy from notion
 products_to_buy = []
-url = 'https://api.notion.com/v1/databases/6a77f92ad67a49d2be9fefdb4048bc9a/query?filter_properties=title'
+url = f'https://api.notion.com/v1/databases/{notion_database_id}/query?filter_properties=title'
 headers = {
     'Authorization': f'Bearer {notion_secret}',
     'Notion-Version': '2022-06-28',
@@ -50,7 +58,7 @@ for ingredient in ingredients:
   products_to_buy.append(ingredient_name)
 
 # get products from todoist
-url = ' https://api.todoist.com/rest/v2/tasks?project_id=2281492801'
+url = f'https://api.todoist.com/rest/v2/tasks?project_id={todoist_project_id}'
 headers = {
     'Authorization': f'Bearer {todoist_secret}'
 }
@@ -65,11 +73,11 @@ for task in tasks:
 print("PRODUCTS TO BUY", products_to_buy)
 
 # get access token and user id
-url = f'{base_url}/connect/token'
+url = f'{frisco_base_url}/connect/token'
 form_data = {
   'grant_type': 'password',
-  'username': username,
-  'password': password
+  'username': frisco_username,
+  'password': frisco_password
   }
 headers = {
     'referer': 'https://www.frisco.pl/',
@@ -84,7 +92,7 @@ access_token = response_json['access_token']
 user_id = response_json['user_id']
 
 # get last purchased products
-url = f'{base_url}/api/v1/users/{user_id}/lists/purchased-products/query?purpose=Listing&pageIndex=1&includeFacets=true&deliveryMethod=Van&pageSize=60&language=pl&disableAutocorrect=false'
+url = f'{frisco_base_url}/api/v1/users/{user_id}/lists/purchased-products/query?purpose=Listing&pageIndex=1&includeFacets=true&deliveryMethod=Van&pageSize=60&language=pl&disableAutocorrect=false'
 headers = {'Authorization': f'{token_type} {access_token}'}
 response = requests.get(url, headers=headers)
 response.raise_for_status()
@@ -98,7 +106,7 @@ for product in purchased_products:
 
 # search product by name
 for product_to_buy in products_to_buy:
-  url = f'{base_url}/api/v1/users/{user_id}/offer/products/query?purpose=Listing&pageIndex=1&search={product_to_buy}&includeFacets=true&deliveryMethod=Van&pageSize=60&language=pl&disableAutocorrect=false'
+  url = f'{frisco_base_url}/api/v1/users/{user_id}/offer/products/query?purpose=Listing&pageIndex=1&search={product_to_buy}&includeFacets=true&deliveryMethod=Van&pageSize=60&language=pl&disableAutocorrect=false'
   headers = {'Authorization': f'{token_type} {access_token}'}
   response = requests.get(url, headers=headers)
   response.raise_for_status()
@@ -116,7 +124,7 @@ for product_to_buy in products_to_buy:
 
   # add to cart if the search returned a product that was purchased recently
   if product_to_buy_id:
-    url = f'{base_url}/api/v1/users/{user_id}/cart'
+    url = f'{frisco_base_url}/api/v1/users/{user_id}/cart'
     headers = {
       'Authorization': f'{token_type} {access_token}',
       'Content-Type': 'application/json'
