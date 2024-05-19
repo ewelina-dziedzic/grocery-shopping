@@ -4,8 +4,10 @@ import webbrowser
 import time
 import urllib.parse
 import configparser
+import re
 
 # TODO think about quantity
+# TODO unavailable product handling
 
 # input
 config = configparser.ConfigParser()
@@ -24,8 +26,8 @@ todoist_project_id = config['todoist']['project_id']
 frisco_base_url = 'https://www.frisco.pl/app/commerce'
 
 # get products to buy from notion
-products_to_buy = []
-url = f'https://api.notion.com/v1/databases/{notion_database_id}/query?filter_properties=title'
+products_to_buy = {}
+url = f'https://api.notion.com/v1/databases/{notion_database_id}/query'
 headers = {
     'Authorization': f'Bearer {notion_secret}',
     'Notion-Version': '2022-06-28',
@@ -55,7 +57,8 @@ response_json = response.json()
 ingredients = response_json['results']
 for ingredient in ingredients:
   ingredient_name = ingredient['properties']['Ingredient']['title'][0]['plain_text']
-  products_to_buy.append(ingredient_name)
+  ingredient_quantity = ingredient['properties']['Quantity']['number']
+  products_to_buy[ingredient_name] = ingredient_quantity or 1
 
 # get products from todoist
 url = f'https://api.todoist.com/rest/v2/tasks?project_id={todoist_project_id}'
@@ -68,7 +71,11 @@ response_json = response.json()
 tasks = response_json
 for task in tasks:
   product_name = task['content']
-  products_to_buy.append(product_name)
+  product_with_quantity =re.match('(.*?) ([0-9]+)$', product_name)
+  if product_with_quantity:
+    products_to_buy[product_with_quantity.group(1)] = product_with_quantity.group(2)
+  else:
+    products_to_buy[product_name] = 1
 
 print("PRODUCTS TO BUY", products_to_buy)
 
@@ -92,7 +99,7 @@ access_token = response_json['access_token']
 user_id = response_json['user_id']
 
 # get last purchased products
-url = f'{frisco_base_url}/api/v1/users/{user_id}/lists/purchased-products/query?purpose=Listing&pageIndex=1&includeFacets=true&deliveryMethod=Van&pageSize=60&language=pl&disableAutocorrect=false'
+url = f'{frisco_base_url}/api/v1/users/{user_id}/lists/purchased-products/query?purpose=Listing&pageIndex=1&includeFacets=true&deliveryMethod=Van&pageSize=100&language=pl&disableAutocorrect=false'
 headers = {'Authorization': f'{token_type} {access_token}'}
 response = requests.get(url, headers=headers)
 response.raise_for_status()
@@ -105,7 +112,7 @@ for product in purchased_products:
    purchased_product_ids.append(product_id)
 
 # search product by name
-for product_to_buy in products_to_buy:
+for product_to_buy, quantity in products_to_buy.items():
   url = f'{frisco_base_url}/api/v1/users/{user_id}/offer/products/query?purpose=Listing&pageIndex=1&search={product_to_buy}&includeFacets=true&deliveryMethod=Van&pageSize=60&language=pl&disableAutocorrect=false'
   headers = {'Authorization': f'{token_type} {access_token}'}
   response = requests.get(url, headers=headers)
@@ -133,13 +140,13 @@ for product_to_buy in products_to_buy:
       'products': [
         {
           'productId': product_to_buy_id,
-          'quantity': 1
+          'quantity': quantity
         }
       ]
     }
     response = requests.put(url, data=json.dumps(data), headers=headers)
     response.raise_for_status()
-    print('ADDED TO CART', product_to_buy_name)
+    # print('ADDED TO CART', product_to_buy_name)
   # open the search page if couldn't find a product to add to cart
   else:
     webbrowser.open(f'https://www.frisco.pl/q,{urllib.parse.quote_plus(product_to_buy)}/stn,searchResults')
