@@ -126,7 +126,7 @@ for product_to_buy, quantity in products_to_buy.items():
     if product_id in purchased_product_ids:
       product_to_buy_id = product_id
       product_to_buy_name = product['product']['name']['pl']
-      print('FOUND', product_to_buy_name, 'for', product_to_buy)
+      print('FOUND', product_to_buy_name, 'for', product_to_buy, '[', quantity, 'szt.]')
       break
 
   # add to cart if the search returned a product that was purchased recently
