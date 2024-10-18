@@ -1,3 +1,4 @@
+import datetime
 import requests
 import json
 import webbrowser
@@ -8,6 +9,212 @@ import re
 
 # TODO think about quantity
 # TODO unavailable product handling
+
+def get_or_create_strategy(strategy_name, strategy_version, strategy_description):
+  config = configparser.ConfigParser()
+  config.read('config.ini')
+  NOTION_SECRET = config['notion']['secret']
+  NOTION_STRATEGY_DATABASE_ID = config['notion']['strategy_database_id']
+
+  url = f'https://api.notion.com/v1/databases/{NOTION_STRATEGY_DATABASE_ID}/query'
+  headers = {
+      'Authorization': f'Bearer {NOTION_SECRET}',
+      'Notion-Version': '2022-06-28',
+      'Content-Type': 'application/json'
+  }
+  data = {
+    'page_size': 1,
+    'filter': {
+        'and': [
+            {
+                'property': 'Name',
+                'title': {
+                    'equals': strategy_name
+                }
+            },
+            {
+                'property': 'Version',
+                'number': {
+                    'equals': strategy_version  
+                }
+            }
+        ]
+    }
+  }
+  response = requests.post(url, data=json.dumps(data), headers=headers)
+  response.raise_for_status()
+  response_json = response.json()
+  strategies = response_json['results']
+  strategies_count = len(strategies)
+
+  if strategies_count > 0:
+    return strategies[0]['id']
+
+  url = f'https://api.notion.com/v1/pages'
+  headers = {
+      'Authorization': f'Bearer {NOTION_SECRET}',
+      'Notion-Version': '2022-06-28',
+      'Content-Type': 'application/json'
+  }
+  data = {
+      'parent': { 'database_id': NOTION_STRATEGY_DATABASE_ID },
+      'properties': {
+          'Name': {
+              'title': [
+                  {
+                      'text': {
+                          'content': strategy_name
+                      }
+                  }
+              ]
+          },
+          'Version': {
+              'number': strategy_version
+          },
+          'Description': {
+             'rich_text': [{ 'type': 'text', 'text': { 'content': strategy_description } }]
+          }
+      }
+  }
+  response = requests.post(url, data=json.dumps(data), headers=headers)
+  response.raise_for_status()
+  return response.json()['id']
+
+
+def create_grocery_shopping_log(store_name, start_time, strategy_id):
+  config = configparser.ConfigParser()
+  config.read('config.ini')
+  NOTION_SECRET = config['notion']['secret']
+  NOTION_GROCERY_SHOPPING_DATABASE_ID = config['notion']['grocery_shopping_database_id']
+
+  url = f'https://api.notion.com/v1/pages'
+  headers = {
+      'Authorization': f'Bearer {NOTION_SECRET}',
+      'Notion-Version': '2022-06-28',
+      'Content-Type': 'application/json'
+  }
+  data = {
+      'parent': { 'database_id': NOTION_GROCERY_SHOPPING_DATABASE_ID },
+      'properties': {
+          'Store name': {
+              'title': [
+                  {
+                      'text': {
+                          'content': store_name
+                      }
+                  }
+              ]
+          },
+          'Start time': {
+              'date': {
+                'start': start_time.isoformat(timespec="seconds")
+              }
+          },
+          'Strategy': {
+            'relation': [{
+              'id': strategy_id
+            }]
+          }
+      }
+  }
+  response = requests.post(url, data=json.dumps(data), headers=headers)
+  response.raise_for_status()
+  return response.json()['id']
+
+
+def create_choice_log(product_name, grocery_shopping_id, store_product_id, store_product_name):
+  config = configparser.ConfigParser()
+  config.read('config.ini')
+  NOTION_SECRET = config['notion']['secret']
+  NOTION_CHOICE_DATABASE_ID = config['notion']['choice_database_id']
+
+  url = f'https://api.notion.com/v1/pages'
+  headers = {
+      'Authorization': f'Bearer {NOTION_SECRET}',
+      'Notion-Version': '2022-06-28',
+      'Content-Type': 'application/json'
+  }
+  data = {
+      'parent': { 'database_id': NOTION_CHOICE_DATABASE_ID },
+      'properties': {
+          'Product name': {
+              'title': [
+                  {
+                      'text': {
+                          'content': product_name
+                      }
+                  }
+              ]
+          },
+          'Store product id': {
+              'rich_text': [{ 'type': 'text', 'text': { 'content': store_product_id } }]
+          },
+          'Store product name': {
+              'rich_text': [{ 'type': 'text', 'text': { 'content': store_product_name } }]
+          },
+          'Grocery shopping': {
+            'relation': [{
+              'id': grocery_shopping_id
+            }]
+          }
+      }
+  }
+  response = requests.post(url, data=json.dumps(data), headers=headers)
+  response.raise_for_status()
+  return response.json()['id']
+
+
+def create_empty_choice_log(product_name, grocery_shopping_id):
+  config = configparser.ConfigParser()
+  config.read('config.ini')
+  NOTION_SECRET = config['notion']['secret']
+  NOTION_CHOICE_DATABASE_ID = config['notion']['choice_database_id']
+
+  url = f'https://api.notion.com/v1/pages'
+  headers = {
+      'Authorization': f'Bearer {NOTION_SECRET}',
+      'Notion-Version': '2022-06-28',
+      'Content-Type': 'application/json'
+  }
+  data = {
+      'parent': { 'database_id': NOTION_CHOICE_DATABASE_ID },
+      'properties': {
+          'Product name': {
+              'title': [
+                  {
+                      'text': {
+                          'content': product_name
+                      }
+                  }
+              ]
+          },
+          'Grocery shopping': {
+            'relation': [{
+              'id': grocery_shopping_id
+            }]
+          }
+      }
+  }
+  response = requests.post(url, data=json.dumps(data), headers=headers)
+  response.raise_for_status()
+  return response.json()['id']
+
+
+def pick_the_product(product_to_buy, quantity, found_products, purchased_product_ids):
+  for product in found_products:
+    product_id = product['productId']
+    if product_id in purchased_product_ids:
+      product_to_buy_name = product['product']['name']['pl']
+      print('FOUND', product_to_buy_name, 'FOR', product_to_buy, '[', quantity, 'szt.]')
+      return product_id, product_to_buy_name
+  return None, None
+
+
+strategy_id = get_or_create_strategy('Frequently bought products', 1, 'I add to a cart products that appear in the frequently bought products list')
+print('strategy id', strategy_id)
+
+grocery_shopping_id = create_grocery_shopping_log('Frisco', datetime.datetime.now(), strategy_id)
+print('grocery shopping id', grocery_shopping_id)
 
 # input
 config = configparser.ConfigParser()
@@ -119,18 +326,11 @@ for product_to_buy, quantity in products_to_buy.items():
   response.raise_for_status()
 
   found_products = response.json()['products']
-  product_to_buy_id = None
-  product_to_buy_name = None
-  for product in found_products:
-    product_id = product['productId']
-    if product_id in purchased_product_ids:
-      product_to_buy_id = product_id
-      product_to_buy_name = product['product']['name']['pl']
-      print('FOUND', product_to_buy_name, 'for', product_to_buy, '[', quantity, 'szt.]')
-      break
+  store_product_id, store_product_name = pick_the_product(product_to_buy, quantity, found_products, purchased_product_ids)
 
   # add to cart if the search returned a product that was purchased recently
-  if product_to_buy_id:
+  if store_product_id:
+    create_choice_log(product_to_buy, grocery_shopping_id, store_product_id, store_product_name)
     url = f'{frisco_base_url}/api/v1/users/{user_id}/cart'
     headers = {
       'Authorization': f'{token_type} {access_token}',
@@ -139,16 +339,17 @@ for product_to_buy, quantity in products_to_buy.items():
     data = {  
       'products': [
         {
-          'productId': product_to_buy_id,
+          'productId': store_product_id,
           'quantity': quantity
         }
       ]
     }
     response = requests.put(url, data=json.dumps(data), headers=headers)
     response.raise_for_status()
-    # print('ADDED TO CART', product_to_buy_name)
   # open the search page if couldn't find a product to add to cart
   else:
     webbrowser.open(f'https://www.frisco.pl/q,{urllib.parse.quote_plus(product_to_buy)}/stn,searchResults')
+    create_empty_choice_log(product_to_buy, grocery_shopping_id)
     time.sleep(1)
-    print('NOT FOUND', product_to_buy)
+
+webbrowser.open('https://www.frisco.pl/stn,iList') # bought often
