@@ -113,7 +113,7 @@ def create_grocery_shopping_log(store_name, start_time, strategy_id):
   return response.json()['id']
 
 
-def create_choice_log(product_name, grocery_shopping_id, store_product_id, store_product_name):
+def create_choice_log(product_name, grocery_shopping_id, store_product_id, store_product_name, quantity, reason):
   url = f'https://api.notion.com/v1/pages'
   headers = {
       'Authorization': f'Bearer {NOTION_SECRET}',
@@ -142,6 +142,12 @@ def create_choice_log(product_name, grocery_shopping_id, store_product_id, store
             'relation': [{
               'id': grocery_shopping_id
             }]
+          },
+          'Quantity': {
+              'number': quantity
+          },
+          'Reason': {
+              'rich_text': [{ 'type': 'text', 'text': { 'content': reason } }]
           }
       }
   }
@@ -150,7 +156,7 @@ def create_choice_log(product_name, grocery_shopping_id, store_product_id, store
   return response.json()['id']
 
 
-def create_empty_choice_log(product_name, grocery_shopping_id):
+def create_empty_choice_log(product_name, grocery_shopping_id, quantity, reason):
   url = f'https://api.notion.com/v1/pages'
   headers = {
       'Authorization': f'Bearer {NOTION_SECRET}',
@@ -173,6 +179,12 @@ def create_empty_choice_log(product_name, grocery_shopping_id):
             'relation': [{
               'id': grocery_shopping_id
             }]
+          },
+          'Quantity': {
+              'number': quantity
+          },
+          'Reason': {
+              'rich_text': [{ 'type': 'text', 'text': { 'content': reason } }]
           }
       }
   }

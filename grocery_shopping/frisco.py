@@ -42,19 +42,19 @@ def log_in():
   user_id = response_json['user_id']
   return token_type, access_token, user_id
 
-def get_last_purchased_products(user_id, token_type, access_token):
-  url = f'{FRISCO_BASE_URL}/api/v1/users/{user_id}/lists/purchased-products/query?purpose=Listing&pageIndex=1&includeFacets=true&deliveryMethod=Van&pageSize=100&language=pl&disableAutocorrect=false'
-  headers = {'Authorization': f'{token_type} {access_token}'}
-  response = requests.get(url, headers=headers)
-  response.raise_for_status()
+# def get_last_purchased_products(user_id, token_type, access_token):
+#   url = f'{FRISCO_BASE_URL}/api/v1/users/{user_id}/lists/purchased-products/query?purpose=Listing&pageIndex=1&includeFacets=true&deliveryMethod=Van&pageSize=100&language=pl&disableAutocorrect=false'
+#   headers = {'Authorization': f'{token_type} {access_token}'}
+#   response = requests.get(url, headers=headers)
+#   response.raise_for_status()
 
-  purchased_products = response.json()['products']
-  purchased_product_ids = []
+#   purchased_products = response.json()['products']
+#   purchased_product_ids = []
 
-  for product in purchased_products:
-    product_id = product['productId']
-    purchased_product_ids.append(product_id)
-  return purchased_product_ids
+#   for product in purchased_products:
+#     product_id = product['productId']
+#     purchased_product_ids.append(product_id)
+#   return purchased_product_ids
 
 def search_product(user_id, token_type, access_token, product_to_buy):
   url = f'{FRISCO_BASE_URL}/api/v1/users/{user_id}/offer/products/query?purpose=Listing&pageIndex=1&search={product_to_buy}&includeFacets=true&deliveryMethod=Van&pageSize=60&language=pl&disableAutocorrect=false'
@@ -64,13 +64,13 @@ def search_product(user_id, token_type, access_token, product_to_buy):
   found_products = response.json()['products']
   return found_products
 
-def pick_the_product(found_products, purchased_product_ids):
-  for product in found_products:
-    product_id = product['productId']
-    if product_id in purchased_product_ids:
-      product_to_buy_name = product['product']['name']['pl']
-      return product_id, product_to_buy_name
-  return None, None
+# def pick_the_product(found_products, purchased_product_ids):
+#   for product in found_products:
+#     product_id = product['productId']
+#     if product_id in purchased_product_ids:
+#       product_to_buy_name = product['product']['name']['pl']
+#       return product_id, product_to_buy_name
+#   return None, None
 
 
 def add_to_cart(user_id, token_type, access_token, store_product_id, quantity):
@@ -91,7 +91,7 @@ def add_to_cart(user_id, token_type, access_token, store_product_id, quantity):
   response.raise_for_status()
 
 if __name__ == "__main__":
-  strategy_id = notion_logging.get_or_create_strategy('Frequently bought products', 1, 'I add to a cart products that appear in the frequently bought products list')
+  strategy_id = notion_logging.get_or_create_strategy('AI Assistent', 1, 'Use Chat GPT to choose product to buy within a given list')
   grocery_shopping_id = notion_logging.create_grocery_shopping_log('Frisco', datetime.datetime.now(), strategy_id)
 
   # get products to buy from notion
@@ -105,21 +105,19 @@ if __name__ == "__main__":
   print("PRODUCTS TO BUY", products_to_buy)
 
   token_type, access_token, user_id = log_in()
-  purchased_product_ids = get_last_purchased_products(user_id, token_type, access_token)
+  # purchased_product_ids = get_last_purchased_products(user_id, token_type, access_token)
 
   for product_to_buy, quantity in products_to_buy.items():
     found_products = search_product(user_id, token_type, access_token, product_to_buy)
-    store_product_id, store_product_name = pick_the_product(found_products, purchased_product_ids)
-    
-    # testing for a time being
-    ai.pick_the_product(product_to_buy, found_products)
+    store_product_id, store_product_name, reason = ai.pick_the_product(product_to_buy, found_products)
+    time.sleep(10)
 
     if store_product_id:
       add_to_cart(user_id, token_type, access_token, store_product_id, quantity)
-      notion_logging.create_choice_log(product_to_buy, grocery_shopping_id, store_product_id, store_product_name)
+      notion_logging.create_choice_log(product_to_buy, grocery_shopping_id, store_product_id, store_product_name, quantity, reason)
     else:
       webbrowser.open(f'https://www.frisco.pl/q,{urllib.parse.quote_plus(product_to_buy)}/stn,searchResults')
-      notion_logging.create_empty_choice_log(product_to_buy, grocery_shopping_id)
+      notion_logging.create_empty_choice_log(product_to_buy, grocery_shopping_id, quantity, reason)
       time.sleep(1)
 
   webbrowser.open('https://www.frisco.pl/stn,iList') # bought often

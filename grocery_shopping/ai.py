@@ -57,7 +57,11 @@ def pick_the_product(product_to_buy, found_products):
   messages = list(client.beta.threads.messages.list(thread_id=thread.id, run_id=run.id))
   message_content = messages[0].content[0].text.value
   output = json.loads(message_content)
-  # print(output["id"])
-  # print(output["name"])
-  # print(output["reason"])
-  print(message_content)
+  if "id" in output:
+    store_product_id = output["id"]
+    store_product_name = output["name"]
+    reason = output["reason"]
+    return store_product_id, store_product_name, reason
+  else:
+    reason = output["reason"]
+    return None, None, reason
