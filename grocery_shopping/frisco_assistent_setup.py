@@ -1,6 +1,7 @@
 import configparser
 import requests
 
+import ai
 
 config = configparser.ConfigParser()
 config.read('config.ini')
@@ -40,31 +41,9 @@ purchased_products = response.json()['products']
 
 result = []
 
-tags_to_ignore = [
-    "displayVariant",
-    "isAvailable",
-    "isStocked",
-    "isNotAlcohol",
-    "isSearchable",
-    "isIndexable",
-    "isPositioned",
-    "isBargain"
-]
 
 for product in purchased_products:
-    product = product["product"]
-    result.append({
-        "id": product["id"],
-        "name": product["name"]["pl"],
-        "packSize": product["packSize"],
-        "unitOfMeasure": product["unitOfMeasure"],
-        "grammage": product["grammage"],
-        "producer": product["producer"] if "producer" in product else "",
-        "brand": product["brand"],
-        "price": product["price"]["price"],
-        "priceAfterPromotion": product["price"]["priceAfterPromotion"] if "priceAfterPromotion" in product["price"] else product["price"]["price"],
-        "tags": [tag for tag in product["tags"] if tag not in tags_to_ignore]
-    })
+    result.append(ai.map_to_ai_product(product))
 
 # print(result)
 
@@ -79,18 +58,6 @@ result = []
 
 found_products = response.json()['products']
 for product in found_products:
-    product = product["product"]
-    result.append({
-        "id": product["id"],
-        "name": product["name"]["pl"],
-        "packSize": product["packSize"],
-        "unitOfMeasure": product["unitOfMeasure"],
-        "grammage": product["grammage"],
-        "producer": product["producer"] if "producer" in product else "",
-        "brand": product["brand"],
-        "price": product["price"]["price"],
-        "priceAfterPromotion": product["price"]["priceAfterPromotion"] if "priceAfterPromotion" in product["price"] else product["price"]["price"],
-        "tags": [tag for tag in product["tags"] if tag not in tags_to_ignore]
-    })
+    result.append(ai.map_to_ai_product(product))
 
 print(result)
