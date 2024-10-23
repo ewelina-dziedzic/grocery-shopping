@@ -61,7 +61,8 @@ def pick_the_product(product_to_buy, found_products):
     store_product_id = output["id"]
     store_product_name = output["name"]
     reason = output["reason"]
-    return store_product_id, store_product_name, reason
+    found_product = next(filter(lambda product: product["id"] == store_product_id, products_for_ai), None)
+    return store_product_id, store_product_name, reason, found_product["price"], found_product["priceAfterPromotion"]
   else:
     reason = output["reason"]
-    return None, None, reason
+    return None, None, reason, None, None

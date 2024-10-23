@@ -113,7 +113,7 @@ def create_grocery_shopping_log(store_name, start_time, strategy_id):
   return response.json()['id']
 
 
-def create_choice_log(product_name, grocery_shopping_id, store_product_id, store_product_name, quantity, reason):
+def create_choice_log(product_name, grocery_shopping_id, store_product_id, store_product_name, quantity, reason, price, priceAfterPromotion):
   url = f'https://api.notion.com/v1/pages'
   headers = {
       'Authorization': f'Bearer {NOTION_SECRET}',
@@ -148,6 +148,12 @@ def create_choice_log(product_name, grocery_shopping_id, store_product_id, store
           },
           'Reason': {
               'rich_text': [{ 'type': 'text', 'text': { 'content': reason } }]
+          },
+          'Price': {
+              'number': price
+          },
+          'Price after promotion': {
+              'number': priceAfterPromotion
           }
       }
   }

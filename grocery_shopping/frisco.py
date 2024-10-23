@@ -109,15 +109,14 @@ if __name__ == "__main__":
 
   for product_to_buy, quantity in products_to_buy.items():
     found_products = search_product(user_id, token_type, access_token, product_to_buy)
-    store_product_id, store_product_name, reason = ai.pick_the_product(product_to_buy, found_products)
-    time.sleep(10)
+    store_product_id, store_product_name, reason, price, priceAfterPromotion = ai.pick_the_product(product_to_buy, found_products)
+    time.sleep(5)
 
     if store_product_id:
       add_to_cart(user_id, token_type, access_token, store_product_id, quantity)
-      notion_logging.create_choice_log(product_to_buy, grocery_shopping_id, store_product_id, store_product_name, quantity, reason)
+      notion_logging.create_choice_log(product_to_buy, grocery_shopping_id, store_product_id, store_product_name, quantity, reason, price, priceAfterPromotion)
     else:
       webbrowser.open(f'https://www.frisco.pl/q,{urllib.parse.quote_plus(product_to_buy)}/stn,searchResults')
       notion_logging.create_empty_choice_log(product_to_buy, grocery_shopping_id, quantity, reason)
-      time.sleep(1)
 
   webbrowser.open('https://www.frisco.pl/stn,iList') # bought often
