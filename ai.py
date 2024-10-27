@@ -1,5 +1,6 @@
 import configparser
 import json
+import time
 from openai import OpenAI
 
 config = configparser.ConfigParser()
@@ -42,19 +43,28 @@ def pick_the_product(product_to_buy, found_products):
   for product in found_products:
     products_for_ai.append(map_to_ai_product(product))
 
-  thread = client.beta.threads.create(messages=
-      [
-          {
-              'role': 'user',
-              'content': f'Chcę kupić produkt o nazwie {product_to_buy}. Który produkt z listy powinnam kupić? ```{products_for_ai}```'
-          }
-      ]
-  )
+  def call_openai(product_to_buy, products_for_ai):
+    thread = client.beta.threads.create(messages=
+        [
+            {
+                'role': 'user',
+                'content': f'Chcę kupić produkt o nazwie {product_to_buy}. Który produkt z listy powinnam kupić? ```{products_for_ai}```'
+            }
+        ]
+    )
 
-  run = client.beta.threads.runs.create_and_poll(
-      thread_id=thread.id, assistant_id=OPENAI_ASSISTANT_ID
-  )
-  messages = list(client.beta.threads.messages.list(thread_id=thread.id, run_id=run.id))
+    run = client.beta.threads.runs.create_and_poll(
+        thread_id=thread.id, assistant_id=OPENAI_ASSISTANT_ID
+    )
+    messages = list(client.beta.threads.messages.list(thread_id=thread.id, run_id=run.id))
+    return messages
+
+  messages = call_openai(product_to_buy, products_for_ai)
+  if(len(messages) == 0 or len(messages[0].content) == 0):
+    print("Retrying a call to LLM for", product_to_buy)
+    time.sleep(10)
+    messages = call_openai(product_to_buy, products_for_ai)
+
   message_content = messages[0].content[0].text.value
   output = json.loads(message_content)
   if "id" in output:

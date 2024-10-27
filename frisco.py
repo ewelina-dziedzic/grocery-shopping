@@ -16,7 +16,6 @@ import todoist
 # TODO reservation start and end time as the event data
 # TODO clean shopping cart at the beginning
 # TODO add status to grocery shopping entry in notion and end date
-# TODO exponential retries for llm calls
 
 
 # consts
@@ -178,7 +177,7 @@ def lambda_handler(event, context):
   for product_to_buy, quantity in products_to_buy.items():
     found_products = search_product(user_id, token_type, access_token, product_to_buy)
     store_product_id, store_product_name, reason, price, priceAfterPromotion = ai.pick_the_product(product_to_buy, found_products)
-    time.sleep(10)
+    time.sleep(5)
 
     if store_product_id:
       add_to_cart(user_id, token_type, access_token, store_product_id, quantity)
