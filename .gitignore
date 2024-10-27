@@ -1,6 +1,9 @@
 # Packages
 /dist/*
-*/__pycache__/*
+/__pycache__/*
+/.aws-sam/*
 
 
 config.ini
+test-call.http
+requirements.txt

@@ -1,0 +1,16 @@
+version = 0.1
+[prod.deploy.parameters]
+stack_name = "grocery-shopping"
+resolve_s3 = true
+s3_prefix = "grocery-shopping"
+region = "eu-west-1"
+capabilities = "CAPABILITY_IAM"
+image_repositories = []
+
+[default.deploy.parameters]
+stack_name = "grocery-shopping"
+resolve_s3 = true
+s3_prefix = "grocery-shopping"
+region = "eu-west-1"
+capabilities = "CAPABILITY_IAM"
+image_repositories = []

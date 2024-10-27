@@ -1,17 +1,23 @@
 import datetime
 import requests
 import json
-import webbrowser
 import time
-import urllib.parse
 import configparser
+import pytz
 
 import ai
 import notion_logging
 import notion
 import todoist
 
+
 # TODO unavailable product handling
+# TODO reservations - handle more cases and add validation
+# TODO reservation start and end time as the event data
+# TODO clean shopping cart at the beginning
+# TODO add status to grocery shopping entry in notion and end date
+# TODO exponential retries for llm calls
+
 
 # consts
 FRISCO_BASE_URL = 'https://www.frisco.pl/app/commerce'
@@ -54,8 +60,9 @@ def reserve_delivery(token_type, access_token, user_id, start_hour, end_hour):
   shipping_address = response_json[0]["shippingAddress"]
   delivery_method = response_json[0]["deliveryMethod"]
   
-  today = datetime.datetime.now().astimezone()
-  tomorrow = today + datetime.timedelta(days=1) 
+  warsaw_tz = pytz.timezone('Europe/Warsaw')
+  today = warsaw_tz.localize(datetime.datetime.now())
+  tomorrow = warsaw_tz.localize(datetime.datetime.now() + datetime.timedelta(days=1))
   
   # to get available slots - ignore until neccessary
   # url = f'{FRISCO_BASE_URL}/api/v2/users/{user_id}/calendar/Van/{tomorrow.year}/{tomorrow.month}/{tomorrow.day}'
@@ -91,7 +98,8 @@ def reserve_delivery(token_type, access_token, user_id, start_hour, end_hour):
       "closesAt": closes_at.isoformat(timespec='seconds'),
       "finalAt": final_at.isoformat(timespec='seconds'),
       "prev-ends-at": prev_ends_at.isoformat(timespec='seconds'),
-      "next-starts-at": next_starts_at.isoformat(timespec='seconds')
+      "next-starts-at": next_starts_at.isoformat(timespec='seconds'),
+      "isMondayAfterNonTradeSunday": false,
     },
     "shippingAddress" : shipping_address
   }
@@ -147,8 +155,7 @@ def add_to_cart(user_id, token_type, access_token, store_product_id, quantity):
   response = requests.put(url, data=json.dumps(data), headers=headers)
   response.raise_for_status()
 
-
-if __name__ == "__main__":
+def lambda_handler(event, context):
   # get products to buy from notion
   products_to_buy = notion.get_grocery_list()
 
@@ -160,7 +167,7 @@ if __name__ == "__main__":
   print("GROCERY LIST", products_to_buy)
 
   token_type, access_token, user_id = log_in()
-  reserve_delivery(token_type, access_token, user_id, start_hour=8, end_hour=9)
+  # reserve_delivery(token_type, access_token, user_id, start_hour=8, end_hour=9)
 
   # delivery reserved so start shopping
   strategy_id = notion_logging.get_or_create_strategy('AI Assistent', 1, 'Use Chat GPT to choose product to buy within a given list')
@@ -171,13 +178,18 @@ if __name__ == "__main__":
   for product_to_buy, quantity in products_to_buy.items():
     found_products = search_product(user_id, token_type, access_token, product_to_buy)
     store_product_id, store_product_name, reason, price, priceAfterPromotion = ai.pick_the_product(product_to_buy, found_products)
-    time.sleep(5)
+    time.sleep(10)
 
     if store_product_id:
       add_to_cart(user_id, token_type, access_token, store_product_id, quantity)
       notion_logging.create_choice_log(product_to_buy, grocery_shopping_id, store_product_id, store_product_name, quantity, reason, price, priceAfterPromotion)
     else:
-      webbrowser.open(f'https://www.frisco.pl/q,{urllib.parse.quote_plus(product_to_buy)}/stn,searchResults')
       notion_logging.create_empty_choice_log(product_to_buy, grocery_shopping_id, quantity, reason)
 
-  webbrowser.open('https://www.frisco.pl/stn,iList') # bought often
+  return {
+      'statusCode': 200,
+      'body': json.dumps('Grocery shopping completed successfully!')
+  }
+
+if __name__ == "__main__":
+  lambda_handler(None, None)
