@@ -14,7 +14,6 @@ import todoist
 # TODO unavailable product handling
 # TODO reservations - handle more cases and add validation
 # TODO reservation start and end time as the event data
-# TODO clean shopping cart at the beginning
 # TODO add status to grocery shopping entry in notion and end date
 
 
@@ -46,6 +45,15 @@ def log_in():
   access_token = response_json['access_token']
   user_id = response_json['user_id']
   return token_type, access_token, user_id
+
+def clear_shopping_cart(token_type, access_token, user_id):
+  url = f'{FRISCO_BASE_URL}/api/v1/users/{user_id}/cart/products'
+  headers = {
+    'Authorization': f'{token_type} {access_token}',
+    'Content-Type': 'application/json'
+  }
+  response = requests.delete(url, headers=headers)
+  response.raise_for_status()
 
 def reserve_delivery(token_type, access_token, user_id, start_hour, end_hour):
   url = f'{FRISCO_BASE_URL}/api/v1/users/{user_id}/addresses/shipping-addresses'
@@ -174,6 +182,7 @@ def lambda_handler(event, context):
 
   # purchased_product_ids = get_last_purchased_products(user_id, token_type, access_token)
 
+  clear_shopping_cart(token_type, access_token, user_id)
   for product_to_buy, quantity in products_to_buy.items():
     found_products = search_product(user_id, token_type, access_token, product_to_buy)
     store_product_id, store_product_name, reason, price, priceAfterPromotion = ai.pick_the_product(product_to_buy, found_products)
