@@ -162,6 +162,20 @@ def add_to_cart(user_id, token_type, access_token, store_product_id, quantity):
   response = requests.put(url, data=json.dumps(data), headers=headers)
   response.raise_for_status()
 
+
+def send_status_update(status, message):
+  config = configparser.ConfigParser()
+  config.read('config.ini')
+
+  url = config['make']['status_update_webhook']
+  data = {  
+    'status': status,
+    'message': message
+  }
+  response = requests.post(url, data=json.dumps(data))
+  response.raise_for_status()
+
+
 def lambda_handler(event, context):
   # get products to buy from notion
   products_to_buy = notion.get_grocery_list()
@@ -194,6 +208,7 @@ def lambda_handler(event, context):
     else:
       notion_logging.create_empty_choice_log(product_to_buy, grocery_shopping_id, quantity, reason)
 
+  send_status_update('Finished', 'All done')  
   return {
       'statusCode': 200,
       'body': json.dumps('Grocery shopping completed successfully!')
