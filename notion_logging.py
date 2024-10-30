@@ -113,6 +113,27 @@ def create_grocery_shopping_log(store_name, start_time, strategy_id):
   return response.json()['id']
 
 
+def update_grocery_shopping_log(grocery_shopping_id, end_time):
+  url = f'https://api.notion.com/v1/pages/{grocery_shopping_id}'
+  headers = {
+      'Authorization': f'Bearer {NOTION_SECRET}',
+      'Notion-Version': '2022-06-28',
+      'Content-Type': 'application/json'
+  }
+  data = {
+      'properties': {
+          'End time': {
+              'date': {
+                'start': end_time.isoformat(timespec="seconds")
+              }
+          }
+      }
+  }
+  response = requests.patch(url, data=json.dumps(data), headers=headers)
+  response.raise_for_status()
+  return response.json()['id']
+
+
 def create_choice_log(product_name, grocery_shopping_id, store_product_id, store_product_name, quantity, reason, price, priceAfterPromotion):
   url = f'https://api.notion.com/v1/pages'
   headers = {

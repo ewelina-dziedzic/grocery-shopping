@@ -208,7 +208,8 @@ def lambda_handler(event, context):
     else:
       notion_logging.create_empty_choice_log(product_to_buy, grocery_shopping_id, quantity, reason)
 
-  send_status_update('Finished', 'All done')  
+  notion_logging.update_grocery_shopping_log(grocery_shopping_id, datetime.datetime.now())
+  send_status_update('Finished', 'All done')
   return {
       'statusCode': 200,
       'body': json.dumps('Grocery shopping completed successfully!')
