@@ -163,57 +163,59 @@ def add_to_cart(user_id, token_type, access_token, store_product_id, quantity):
   response.raise_for_status()
 
 
-def send_status_update(status, message):
+def send_status_update(message):
   config = configparser.ConfigParser()
   config.read('config.ini')
 
   url = config['make']['status_update_webhook']
-  data = {  
-    'status': status,
-    'message': message
-  }
-  response = requests.post(url, data=json.dumps(data))
+  headers = {'Content-Type': 'text/plain; charset=utf-8'}
+  response = requests.post(url, data=message.encode('utf-8'), headers=headers)
   response.raise_for_status()
 
 
 def lambda_handler(event, context):
-  # get products to buy from notion
-  products_to_buy = notion.get_grocery_list()
+  try:
+    # get products to buy from notion
+    products_to_buy = notion.get_grocery_list()
 
-  # get products from todoist
-  grocery_list = todoist.get_grocery_list()
-  for product_name, quantity in grocery_list.items():
-    products_to_buy[product_name] = quantity
+    # get products from todoist
+    grocery_list = todoist.get_grocery_list()
+    for product_name, quantity in grocery_list.items():
+      products_to_buy[product_name] = quantity
 
-  print("GROCERY LIST", products_to_buy)
+    print("GROCERY LIST", products_to_buy)
 
-  token_type, access_token, user_id = log_in()
-  # reserve_delivery(token_type, access_token, user_id, start_hour=8, end_hour=9)
+    token_type, access_token, user_id = log_in()
+    # reserve_delivery(token_type, access_token, user_id, start_hour=8, end_hour=9)
 
-  # delivery reserved so start shopping
-  strategy_id = notion_logging.get_or_create_strategy('AI Assistent', 1, 'Use Chat GPT to choose product to buy within a given list')
-  grocery_shopping_id = notion_logging.create_grocery_shopping_log('Frisco', datetime.datetime.now(), strategy_id)
+    # delivery reserved so start shopping
+    strategy_id = notion_logging.get_or_create_strategy('AI Assistent', 1, 'Use Chat GPT to choose product to buy within a given list')
+    grocery_shopping_id = notion_logging.create_grocery_shopping_log('Frisco', datetime.datetime.now(), strategy_id)
 
-  # purchased_product_ids = get_last_purchased_products(user_id, token_type, access_token)
+    # purchased_product_ids = get_last_purchased_products(user_id, token_type, access_token)
 
-  clear_shopping_cart(token_type, access_token, user_id)
-  for product_to_buy, quantity in products_to_buy.items():
-    found_products = search_product(user_id, token_type, access_token, product_to_buy)
-    store_product_id, store_product_name, reason, price, priceAfterPromotion = ai.pick_the_product(product_to_buy, found_products)
-    time.sleep(5)
+    clear_shopping_cart(token_type, access_token, user_id)
+    for product_to_buy, quantity in products_to_buy.items():
+      found_products = search_product(user_id, token_type, access_token, product_to_buy)
+      store_product_id, store_product_name, reason, price, priceAfterPromotion = ai.pick_the_product(product_to_buy, found_products)
+      time.sleep(5)
 
-    if store_product_id:
-      add_to_cart(user_id, token_type, access_token, store_product_id, quantity)
-      notion_logging.create_choice_log(product_to_buy, grocery_shopping_id, store_product_id, store_product_name, quantity, reason, price, priceAfterPromotion)
-    else:
-      notion_logging.create_empty_choice_log(product_to_buy, grocery_shopping_id, quantity, reason)
+      if store_product_id:
+        add_to_cart(user_id, token_type, access_token, store_product_id, quantity)
+        notion_logging.create_choice_log(product_to_buy, grocery_shopping_id, store_product_id, store_product_name, quantity, reason, price, priceAfterPromotion)
+      else:
+        notion_logging.create_empty_choice_log(product_to_buy, grocery_shopping_id, quantity, reason)
 
-  notion_logging.update_grocery_shopping_log(grocery_shopping_id, datetime.datetime.now())
-  send_status_update('Finished', 'All done')
-  return {
+    notion_logging.update_grocery_shopping_log(grocery_shopping_id, datetime.datetime.now())
+    send_status_update('✅ all done')
+    return {
       'statusCode': 200,
       'body': json.dumps('Grocery shopping completed successfully!')
-  }
+    }
+  except Exception as exception:
+    send_status_update(f'💥 error: {str(exception)}')
+    raise
+
 
 if __name__ == "__main__":
   lambda_handler(None, None)
