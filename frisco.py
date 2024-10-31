@@ -197,7 +197,8 @@ def lambda_handler(event, context):
     clear_shopping_cart(token_type, access_token, user_id)
     for product_to_buy, quantity in products_to_buy.items():
       found_products = search_product(user_id, token_type, access_token, product_to_buy)
-      store_product_id, store_product_name, reason, price, priceAfterPromotion = ai.pick_the_product(product_to_buy, found_products)
+      available_products = [product for product in found_products if product['product'].get('isAvailable') and product['product'].get('isStocked')]
+      store_product_id, store_product_name, reason, price, priceAfterPromotion = ai.pick_the_product(product_to_buy, available_products)
       time.sleep(5)
 
       if store_product_id:
