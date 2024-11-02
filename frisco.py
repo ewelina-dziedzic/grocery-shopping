@@ -61,7 +61,7 @@ def find_best_delivery_window(date, preferred_start_time, delivery_windows):
     hour, minute = start_time.split(':')
     start_date = date.replace(hour=int(hour), minute=int(minute), second=0, microsecond=0)
     for delivery_window in delivery_windows:
-      if delivery_window['deliveryWindow']['startsAt'] == start_date.isoformat(timespec='seconds'):
+      if delivery_window['canReserve'] and delivery_window['deliveryWindow']['startsAt'] == start_date.isoformat(timespec='seconds'):
         return delivery_window['deliveryWindow']
   return None
 
