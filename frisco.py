@@ -55,7 +55,18 @@ def clear_shopping_cart(token_type, access_token, user_id):
   response = requests.delete(url, headers=headers)
   response.raise_for_status()
 
-def reserve_delivery(token_type, access_token, user_id, start_hour, end_hour):
+
+def find_best_delivery_window(date, preferred_start_time, delivery_windows):
+  for start_time in preferred_start_time:
+    hour, minute = start_time.split(':')
+    start_date = date.replace(hour=int(hour), minute=int(minute), second=0, microsecond=0)
+    for delivery_window in delivery_windows:
+      if delivery_window['deliveryWindow']['startsAt'] == start_date.isoformat(timespec='seconds'):
+        return delivery_window['deliveryWindow']
+  return None
+
+
+def reserve_delivery(token_type, access_token, user_id, preferred_start_time):
   url = f'{FRISCO_BASE_URL}/api/v1/users/{user_id}/addresses/shipping-addresses'
   headers = {
     'Authorization': f'{token_type} {access_token}',
@@ -64,31 +75,25 @@ def reserve_delivery(token_type, access_token, user_id, start_hour, end_hour):
   response = requests.get(url, headers=headers)
   response.raise_for_status()
   response_json = response.json()
-  shipping_address = response_json[0]["shippingAddress"]
-  delivery_method = response_json[0]["deliveryMethod"]
+  shipping_address = response_json[0]['shippingAddress']
   
   warsaw_tz = pytz.timezone('Europe/Warsaw')
-  today = warsaw_tz.localize(datetime.datetime.now())
   tomorrow = warsaw_tz.localize(datetime.datetime.now() + datetime.timedelta(days=1))
   
-  # to get available slots - ignore until neccessary
-  # url = f'{FRISCO_BASE_URL}/api/v2/users/{user_id}/calendar/Van/{tomorrow.year}/{tomorrow.month}/{tomorrow.day}'
-  # headers = {
-  #   'Authorization': f'{token_type} {access_token}',
-  #   'Content-Type': 'application/json'
-  # }
-  # data = shipping_address
-  # response = requests.post(url, data=json.dumps(data), headers=headers)
-  # response.raise_for_status()
-  # response_json = response.json()
-  # print(response_json)
+  # to get available slots
+  url = f'{FRISCO_BASE_URL}/api/v2/users/{user_id}/calendar/Van/{tomorrow.year}/{tomorrow.month}/{tomorrow.day}'
+  headers = {
+    'Authorization': f'{token_type} {access_token}',
+    'Content-Type': 'application/json'
+  }
+  data = shipping_address
+  response = requests.post(url, data=json.dumps(data), headers=headers)
+  response.raise_for_status()
+  delivery_windows = response.json()
 
-  start_time = tomorrow.replace(hour=start_hour, minute=0, second=0, microsecond=0)
-  end_time = tomorrow.replace(hour=end_hour, minute=0, second=0, microsecond=0)
-  closes_at = today.replace(hour=13, minute=0, second=0, microsecond=0)
-  final_at = closes_at
-  prev_ends_at = start_time + datetime.timedelta(minutes=30)
-  next_starts_at = prev_ends_at
+  delivery_window = find_best_delivery_window(tomorrow, preferred_start_time, delivery_windows)
+  if delivery_window is None:
+    return None
   
   url = f'{FRISCO_BASE_URL}/api/v2/users/{user_id}/cart/reservation'
   headers = {
@@ -96,22 +101,14 @@ def reserve_delivery(token_type, access_token, user_id, start_hour, end_hour):
     'Content-Type': 'application/json'
   }
   data = {
-    # "extendedRange": null,
-    "deliveryWindow":{  
-      "warehouse": "WRO",
-      "deliveryMethod": delivery_method,
-      "startsAt": start_time.isoformat(timespec='seconds'),
-      "endsAt": end_time.isoformat(timespec='seconds'), 
-      "closesAt": closes_at.isoformat(timespec='seconds'),
-      "finalAt": final_at.isoformat(timespec='seconds'),
-      "prev-ends-at": prev_ends_at.isoformat(timespec='seconds'),
-      "next-starts-at": next_starts_at.isoformat(timespec='seconds'),
-      "isMondayAfterNonTradeSunday": false,
-    },
-    "shippingAddress" : shipping_address
+    # 'extendedRange': null,
+    'deliveryWindow': delivery_window, 
+    'shippingAddress' : shipping_address
   }
+  print(data)
   response = requests.post(url, data=json.dumps(data), headers=headers)
   response.raise_for_status()
+  return delivery_window
 
 
 # def get_last_purchased_products(user_id, token_type, access_token):
@@ -172,8 +169,31 @@ def send_status_update(message):
   response = requests.post(url, data=message.encode('utf-8'), headers=headers)
   response.raise_for_status()
 
+def schedule(event, context):
+  try:
+    token_type, access_token, user_id = log_in()
+    preferred_start_time = ['8:00', '8:30', '7:30', '9:00', '7:00', '9:30']
+    delivery_window = reserve_delivery(token_type, access_token, user_id, preferred_start_time)
+    if delivery_window is None:
+      send_status_update('❌ no delivery window found')
+      return {
+        'statusCode': 200,
+        'body': json.dumps('No delivery window found!')
+      }
+    
+    start_date = datetime.datetime.fromisoformat(delivery_window['startsAt'])
+    end_date = datetime.datetime.fromisoformat(delivery_window['endsAt'])
+    send_status_update(f'✅ delivery is scheduled at {start_date.strftime('%A %d.%m.%Y %H:%M')}-{end_date.strftime('%H:%M')}')
+    return {
+      'statusCode': 200,
+      'body': json.dumps('Scheduling completed successfully!')
+    }
+  except Exception as exception:
+    send_status_update(f'💥 error: {str(exception)}')
+    raise
 
-def lambda_handler(event, context):
+
+def shop(event, context):
   try:
     # get products to buy from notion
     products_to_buy = notion.get_grocery_list()
@@ -183,10 +203,9 @@ def lambda_handler(event, context):
     for product_name, quantity in grocery_list.items():
       products_to_buy[product_name] = quantity
 
-    print("GROCERY LIST", products_to_buy)
+    print('GROCERY LIST', products_to_buy)
 
     token_type, access_token, user_id = log_in()
-    # reserve_delivery(token_type, access_token, user_id, start_hour=8, end_hour=9)
 
     # delivery reserved so start shopping
     strategy_id = notion_logging.get_or_create_strategy('AI Assistent', 1, 'Use Chat GPT to choose product to buy within a given list')
@@ -208,7 +227,7 @@ def lambda_handler(event, context):
         notion_logging.create_empty_choice_log(product_to_buy, grocery_shopping_id, quantity, reason)
 
     notion_logging.update_grocery_shopping_log(grocery_shopping_id, datetime.datetime.now())
-    send_status_update('✅ all done')
+    send_status_update('✅ items successfully added to your cart')
     return {
       'statusCode': 200,
       'body': json.dumps('Grocery shopping completed successfully!')
@@ -218,5 +237,6 @@ def lambda_handler(event, context):
     raise
 
 
-if __name__ == "__main__":
-  lambda_handler(None, None)
+if __name__ == '__main__':
+  schedule(None, None)
+  shop(None, None)

@@ -1,51 +1,26 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: Grocery Shopping Lambda Function
+Description: Grocery Shopping Lambda Functions
 
 Resources:
-  GroceryShoppingFunction:
+  GroceryShoppingShopFunction:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: ./
-      Handler: frisco.lambda_handler
+      Handler: frisco.schedule
       Runtime: python3.12
       Timeout: 900
       MemorySize: 256
-      FunctionName: grocery-shopping
-      Events:
-        HttpGet:
-          Type: Api
-          Properties:
-            Path: /run-shopping
-            Method: get
-            Auth:
-              ApiKeyRequired: true
-
-  ApiGatewayApiKey:
-    Type: AWS::ApiGateway::ApiKey
+      FunctionName: grocery-shopping-schedule
+      ReservedConcurrentExecutions: 1
+  
+  GroceryShoppingScheduleFunction:
+    Type: AWS::Serverless::Function
     Properties:
-      Enabled: true
-      Name: GroceryShoppingApiKey
-
-  ApiGatewayUsagePlan:
-    Type: AWS::ApiGateway::UsagePlan
-    Properties:
-      ApiStages:
-        - ApiId: !Ref ServerlessRestApi
-          Stage: Prod
-      UsagePlanName: GroceryShoppingUsagePlan
-
-  ApiGatewayUsagePlanKey:
-    Type: AWS::ApiGateway::UsagePlanKey
-    Properties:
-      KeyId: !Ref ApiGatewayApiKey
-      KeyType: API_KEY
-      UsagePlanId: !Ref ApiGatewayUsagePlan
-
-Outputs:
-  GroceryShoppingApi:
-    Description: "API Gateway endpoint URL for Prod stage"
-    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/run-shopping/"
-  ApiKey:
-    Description: "API Key for the Grocery Shopping API"
-    Value: !Ref ApiGatewayApiKey
+      CodeUri: ./
+      Handler: frisco.shop
+      Runtime: python3.12
+      Timeout: 900
+      MemorySize: 256
+      FunctionName: grocery-shopping-shop
+      ReservedConcurrentExecutions: 1
