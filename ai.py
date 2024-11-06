@@ -1,13 +1,16 @@
-import configparser
+import boto3
 import json
 import time
 from openai import OpenAI
 
-config = configparser.ConfigParser()
-config.read('config.ini')
 
-OPENAI_SECRET = config['openai']['secret']
-OPENAI_ASSISTANT_ID = config['openai']['grocery_shopping_assistant_id']
+ssm = boto3.client('ssm')
+parameter_response = ssm.get_parameter(Name='/openai/secret', WithDecryption=True)
+OPENAI_SECRET = parameter_response['Parameter']['Value']
+
+parameter_response = ssm.get_parameter(Name='/openai/grocery_shopping_assistant_id')
+OPENAI_ASSISTANT_ID = parameter_response['Parameter']['Value']
+
 
 def map_to_ai_product(product):
   tags_to_ignore = [

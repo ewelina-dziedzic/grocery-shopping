@@ -1,14 +1,20 @@
-import configparser
+import boto3
 import json
 import requests
 
 
-config = configparser.ConfigParser()
-config.read('config.ini')
-NOTION_SECRET = config['notion']['secret']
-NOTION_STRATEGY_DATABASE_ID = config['notion']['strategy_database_id']
-NOTION_GROCERY_SHOPPING_DATABASE_ID = config['notion']['grocery_shopping_database_id']
-NOTION_CHOICE_DATABASE_ID = config['notion']['choice_database_id']
+ssm = boto3.client('ssm')
+parameter_response = ssm.get_parameter(Name='/notion/secret', WithDecryption=True)
+NOTION_SECRET = parameter_response['Parameter']['Value']
+
+parameter_response = ssm.get_parameter(Name='/notion/strategy_database_id')
+NOTION_STRATEGY_DATABASE_ID = parameter_response['Parameter']['Value']
+
+parameter_response = ssm.get_parameter(Name='/notion/grocery_shopping_database_id')
+NOTION_GROCERY_SHOPPING_DATABASE_ID = parameter_response['Parameter']['Value']
+
+parameter_response = ssm.get_parameter(Name='/notion/choice_database_id')
+NOTION_CHOICE_DATABASE_ID = parameter_response['Parameter']['Value']
 
 
 def get_or_create_strategy(strategy_name, strategy_version, strategy_description):

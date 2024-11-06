@@ -1,13 +1,14 @@
-import configparser
+import boto3
 import json
 import requests
 
 
-config = configparser.ConfigParser()
-config.read('config.ini')
+ssm = boto3.client('ssm')
+secret_response = ssm.get_parameter(Name='/notion/secret', WithDecryption=True)
+notion_secret = secret_response['Parameter']['Value']
 
-notion_secret = config['notion']['secret']
-notion_database_id = config['notion']['ingredients_database_id']
+database_id_response = ssm.get_parameter(Name='/notion/ingredients_database_id')
+notion_database_id = database_id_response['Parameter']['Value']
 
 def get_grocery_list():
     products_to_buy = {}

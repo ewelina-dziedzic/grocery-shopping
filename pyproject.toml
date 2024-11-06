@@ -5,10 +5,11 @@ description = ""
 authors = ["Ewelina Dziedzic <ewelina.dziedzic@outlook.com>"]
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = "^3.12"
 requests = "^2.31.0"
 openai = "^1.52.0"
 pytz = "^2024.2"
+boto3 = "^1.35.54"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"

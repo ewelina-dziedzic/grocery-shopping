@@ -1,12 +1,14 @@
-import configparser
+import boto3
 import requests
 import re
 
-config = configparser.ConfigParser()
-config.read('config.ini')
+ssm = boto3.client('ssm')
+parameter_response = ssm.get_parameter(Name='/todoist/secret', WithDecryption=True)
+todoist_secret = parameter_response['Parameter']['Value']
 
-todoist_secret = config['todoist']['secret']
-todoist_project_id = config['todoist']['project_id']
+parameter_response = ssm.get_parameter(Name='/todoist/project_id')
+todoist_project_id = parameter_response['Parameter']['Value']
+
 
 def get_grocery_list():
     url = f'https://api.todoist.com/rest/v2/tasks?project_id={todoist_project_id}'

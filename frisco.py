@@ -1,8 +1,8 @@
+import boto3
 import datetime
 import requests
 import json
 import time
-import configparser
 import pytz
 
 import ai
@@ -11,21 +11,16 @@ import notion
 import todoist
 
 
-# TODO unavailable product handling
-# TODO reservations - handle more cases and add validation
-# TODO reservation start and end time as the event data
-# TODO add status to grocery shopping entry in notion and end date
-
-
 # consts
 FRISCO_BASE_URL = 'https://www.frisco.pl/app/commerce'
 
 def log_in():
-  config = configparser.ConfigParser()
-  config.read('config.ini')
+  ssm = boto3.client('ssm')
+  username_response = ssm.get_parameter(Name='/frisco/username')
+  frisco_username = username_response['Parameter']['Value']
 
-  frisco_username = config['frisco']['username']
-  frisco_password = config['frisco']['password']
+  password_response = ssm.get_parameter(Name='/frisco/password', WithDecryption=True)
+  frisco_password = password_response['Parameter']['Value']
 
   url = f'{FRISCO_BASE_URL}/connect/token'
   form_data = {
@@ -161,10 +156,10 @@ def add_to_cart(user_id, token_type, access_token, store_product_id, quantity):
 
 
 def send_status_update(message):
-  config = configparser.ConfigParser()
-  config.read('config.ini')
+  ssm = boto3.client('ssm')
+  url_response = ssm.get_parameter(Name='/make/status_update_webhook', WithDecryption=True)
+  url = url_response['Parameter']['Value']
 
-  url = config['make']['status_update_webhook']
   headers = {'Content-Type': 'text/plain; charset=utf-8'}
   response = requests.post(url, data=message.encode('utf-8'), headers=headers)
   response.raise_for_status()
