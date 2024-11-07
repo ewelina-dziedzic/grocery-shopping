@@ -1,4 +1,3 @@
-import boto3
 import datetime
 import requests
 import json
@@ -6,6 +5,7 @@ import time
 import pytz
 
 import ai
+import config
 import notion_logging
 import notion
 import todoist
@@ -15,12 +15,8 @@ import todoist
 FRISCO_BASE_URL = 'https://www.frisco.pl/app/commerce'
 
 def log_in():
-  ssm = boto3.client('ssm')
-  username_response = ssm.get_parameter(Name='/frisco/username')
-  frisco_username = username_response['Parameter']['Value']
-
-  password_response = ssm.get_parameter(Name='/frisco/password', WithDecryption=True)
-  frisco_password = password_response['Parameter']['Value']
+  frisco_username = config.get_value('frisco', 'username')
+  frisco_password =  config.get_value('frisco', 'password', is_secret=True)
 
   url = f'{FRISCO_BASE_URL}/connect/token'
   form_data = {
@@ -156,9 +152,7 @@ def add_to_cart(user_id, token_type, access_token, store_product_id, quantity):
 
 
 def send_status_update(message):
-  ssm = boto3.client('ssm')
-  url_response = ssm.get_parameter(Name='/make/status_update_webhook', WithDecryption=True)
-  url = url_response['Parameter']['Value']
+  url = config.get_value('make', 'status_update_webhook', is_secret=True)
 
   headers = {'Content-Type': 'text/plain; charset=utf-8'}
   response = requests.post(url, data=message.encode('utf-8'), headers=headers)

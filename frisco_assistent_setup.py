@@ -1,14 +1,11 @@
-import boto3
+import config
 import requests
 
 import ai
 
-ssm = boto3.client('ssm')
-username_response = ssm.get_parameter(Name='/frisco/username')
-frisco_username = username_response['Parameter']['Value']
 
-password_response = ssm.get_parameter(Name='/frisco/password', WithDecryption=True)
-frisco_password = password_response['Parameter']['Value']
+frisco_username = config.get_value('frisco', 'username')
+frisco_password = config.get_value('frisco', 'password', is_secret=True)
 
 # consts
 frisco_base_url = 'https://www.frisco.pl/app/commerce'

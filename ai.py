@@ -1,15 +1,11 @@
-import boto3
+import config
 import json
 import time
 from openai import OpenAI
 
 
-ssm = boto3.client('ssm')
-parameter_response = ssm.get_parameter(Name='/openai/secret', WithDecryption=True)
-OPENAI_SECRET = parameter_response['Parameter']['Value']
-
-parameter_response = ssm.get_parameter(Name='/openai/grocery_shopping_assistant_id')
-OPENAI_ASSISTANT_ID = parameter_response['Parameter']['Value']
+OPENAI_SECRET = config.get_value('openai', 'secret', is_secret=True)
+OPENAI_ASSISTANT_ID = config.get_value('openai', 'grocery_shopping_assistant_id')
 
 
 def map_to_ai_product(product):

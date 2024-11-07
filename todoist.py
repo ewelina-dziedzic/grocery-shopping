@@ -1,13 +1,10 @@
-import boto3
+import config
 import requests
 import re
 
-ssm = boto3.client('ssm')
-parameter_response = ssm.get_parameter(Name='/todoist/secret', WithDecryption=True)
-todoist_secret = parameter_response['Parameter']['Value']
 
-parameter_response = ssm.get_parameter(Name='/todoist/project_id')
-todoist_project_id = parameter_response['Parameter']['Value']
+todoist_secret = config.get_value('todoist', 'secret', is_secret=True)
+todoist_project_id = config.get_value('todoist', 'project_id')
 
 
 def get_grocery_list():

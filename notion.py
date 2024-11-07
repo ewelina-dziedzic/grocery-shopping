@@ -1,14 +1,10 @@
-import boto3
+import config
 import json
 import requests
 
 
-ssm = boto3.client('ssm')
-secret_response = ssm.get_parameter(Name='/notion/secret', WithDecryption=True)
-notion_secret = secret_response['Parameter']['Value']
-
-database_id_response = ssm.get_parameter(Name='/notion/ingredients_database_id')
-notion_database_id = database_id_response['Parameter']['Value']
+notion_secret = config.get_value('notion', 'secret', is_secret=True)
+notion_database_id = config.get_value('notion', 'ingredients_database_id')
 
 def get_grocery_list():
     products_to_buy = {}
