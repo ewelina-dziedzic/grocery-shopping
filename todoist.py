@@ -21,7 +21,7 @@ def get_grocery_list():
         product_name = task["content"]
         product_with_quantity = re.match("(.*?) ([0-9]+)$", product_name)
         if product_with_quantity:
-            products_to_buy[product_with_quantity.group(1)] = (
+            products_to_buy[product_with_quantity.group(1)] = int(
                 product_with_quantity.group(2)
             )
         else:
