@@ -100,7 +100,7 @@ def reserve_delivery(token_type, access_token, user_id, preferred_start_time):
         "Content-Type": "application/json",
     }
     data = {
-        # 'extendedRange': null,
+        # "extendedRange": null,
         "deliveryWindow": delivery_window,
         "shippingAddress": shipping_address,
     }
@@ -109,23 +109,40 @@ def reserve_delivery(token_type, access_token, user_id, preferred_start_time):
     return delivery_window
 
 
+def download_all_products():
+    url = "https://commerce.frisco.pl/api/v1/integration/feeds/public?language=pl"
+    response = requests.get(url)
+    response.raise_for_status()
+
+    products = response.json()["products"]
+    result = {}
+
+    for product in products:
+        result[product["productId"]] = {
+            "description": product.get("description", ""),
+            "components": product.get("contentData", "").get("components", "")
+        }
+
+    return result
+
+
 # def get_last_purchased_products(user_id, token_type, access_token):
-#   url = f'{FRISCO_BASE_URL}/api/v1/users/{user_id}/lists/purchased-products/query?purpose=Listing&pageIndex=1&includeFacets=true&deliveryMethod=Van&pageSize=100&language=pl&disableAutocorrect=false'
-#   headers = {'Authorization': f'{token_type} {access_token}'}
+#   url = f"{FRISCO_BASE_URL}/api/v1/users/{user_id}/lists/purchased-products/query?purpose=Listing&pageIndex=1&includeFacets=true&deliveryMethod=Van&pageSize=100&language=pl&disableAutocorrect=false"
+#   headers = {"Authorization": f"{token_type} {access_token}"}
 #   response = requests.get(url, headers=headers)
 #   response.raise_for_status()
 
-#   purchased_products = response.json()['products']
+#   purchased_products = response.json()["products"]
 #   purchased_product_ids = []
 
 #   for product in purchased_products:
-#     product_id = product['productId']
+#     product_id = product["productId"]
 #     purchased_product_ids.append(product_id)
 #   return purchased_product_ids
 
 
 def search_product(user_id, token_type, access_token, product_to_buy):
-    url = f"{FRISCO_BASE_URL}/api/v1/users/{user_id}/offer/products/query?purpose=Listing&pageIndex=1&search={product_to_buy}&includeFacets=true&deliveryMethod=Van&pageSize=60&language=pl&disableAutocorrect=false"
+    url = f"{FRISCO_BASE_URL}/api/v1/users/{user_id}/offer/products/query?purpose=Listing&pageIndex=1&search={product_to_buy}&includeFacets=true&deliveryMethod=Van&pageSize=50&language=pl&disableAutocorrect=false"
     headers = {"Authorization": f"{token_type} {access_token}"}
     response = requests.get(url, headers=headers)
     response.raise_for_status()
@@ -135,9 +152,9 @@ def search_product(user_id, token_type, access_token, product_to_buy):
 
 # def pick_the_product(found_products, purchased_product_ids):
 #   for product in found_products:
-#     product_id = product['productId']
+#     product_id = product["productId"]
 #     if product_id in purchased_product_ids:
-#       product_to_buy_name = product['product']['name']['pl']
+#       product_to_buy_name = product["product"]["name"]["pl"]
 #       return product_id, product_to_buy_name
 #   return None, None
 
@@ -175,7 +192,7 @@ def schedule(event, context):
         start_date = datetime.datetime.fromisoformat(delivery_window["startsAt"])
         end_date = datetime.datetime.fromisoformat(delivery_window["endsAt"])
         send_status_update(
-            f"✅ delivery is scheduled at {start_date.strftime('%A %d.%m.%Y %H:%M')}-{end_date.strftime('%H:%M')}"
+            f"✅ delivery is scheduled at {start_date.strftime("%A %d.%m.%Y %H:%M")}-{end_date.strftime("%H:%M")}"
         )
         return {
             "statusCode": 200,
@@ -213,6 +230,8 @@ def shop(event, context):
         # purchased_product_ids = get_last_purchased_products(user_id, token_type, access_token)
 
         clear_shopping_cart(token_type, access_token, user_id)
+        products_feed = download_all_products()
+
         for product_to_buy, quantity in products_to_buy.items():
             found_products = search_product(
                 user_id, token_type, access_token, product_to_buy
@@ -224,7 +243,7 @@ def shop(event, context):
                 and product["product"].get("isStocked")
             ]
             store_product_id, store_product_name, reason, price, priceAfterPromotion = (
-                ai.pick_the_product(product_to_buy, available_products)
+                ai.pick_the_product(product_to_buy, available_products, products_feed)
             )
             time.sleep(10)
 

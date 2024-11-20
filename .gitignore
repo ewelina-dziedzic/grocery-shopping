@@ -7,3 +7,4 @@
 config.ini
 test-call.http
 requirements.txt
+products-feed.json

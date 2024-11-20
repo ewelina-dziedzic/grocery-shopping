@@ -10,7 +10,7 @@ Resources:
       Handler: frisco.schedule
       Runtime: python3.12
       Timeout: 900
-      MemorySize: 256
+      MemorySize: 512
       FunctionName: grocery-shopping-schedule
       ReservedConcurrentExecutions: 1
       EventInvokeConfig:

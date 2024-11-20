@@ -2,6 +2,7 @@ import config
 import requests
 
 import ai
+import frisco
 
 
 frisco_username = config.get_value("frisco", "username")
@@ -30,7 +31,7 @@ access_token = response_json["access_token"]
 user_id = response_json["user_id"]
 
 # get last purchased products
-url = f"{frisco_base_url}/api/v1/users/{user_id}/lists/purchased-products/query?purpose=Listing&pageIndex=1&includeFacets=true&deliveryMethod=Van&pageSize=20&language=pl&disableAutocorrect=false"
+url = f"{frisco_base_url}/api/v1/users/{user_id}/lists/purchased-products/query?purpose=Listing&pageIndex=1&includeFacets=true&deliveryMethod=Van&pageSize=25&language=pl&disableAutocorrect=false"
 headers = {"Authorization": f"{token_type} {access_token}"}
 response = requests.get(url, headers=headers)
 response.raise_for_status()
@@ -39,11 +40,13 @@ purchased_products = response.json()["products"]
 
 result = []
 
+products_feed = frisco.download_all_products()
 
 for product in purchased_products:
-    result.append(ai.map_to_ai_product(product))
+    if "price" in product["product"]:
+        result.append(ai.map_to_ai_product(product, products_feed))
 
-# print(result)
+#print(result)
 
 # search for Jogurt
 product_to_buy = "Jogurt"
@@ -56,6 +59,6 @@ result = []
 
 found_products = response.json()["products"]
 for product in found_products:
-    result.append(ai.map_to_ai_product(product))
+    result.append(ai.map_to_ai_product(product, products_feed))
 
 print(result)
