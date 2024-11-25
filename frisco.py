@@ -216,16 +216,9 @@ def shop(event, context):
         print("GROCERY LIST", products_to_buy)
 
         token_type, access_token, user_id = log_in()
-
-        # delivery reserved so start shopping
-        strategy_id = notion_logging.get_or_create_strategy(
-            "AI Assistent",
-            1,
-            "Use Chat GPT to choose product to buy within a given list",
-        )
+        
         grocery_shopping_id = notion_logging.create_grocery_shopping_log(
-            "Frisco", datetime.datetime.now(), strategy_id
-        )
+            "Frisco", datetime.datetime.now())
 
         # purchased_product_ids = get_last_purchased_products(user_id, token_type, access_token)
 
