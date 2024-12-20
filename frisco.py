@@ -213,6 +213,13 @@ def shop(event, context):
         for product_name, quantity in grocery_list.items():
             products_to_buy[product_name] = quantity
 
+        # filter out products to buy locally
+        products_to_buy = {
+            product_name: quantity
+            for product_name, quantity in products_to_buy.items()
+            if not product_name.startswith("local")
+        }
+
         print("GROCERY LIST", products_to_buy)
 
         token_type, access_token, user_id = log_in()
