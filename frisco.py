@@ -245,7 +245,7 @@ def shop(event, context):
             store_product_id, store_product_name, reason, price, priceAfterPromotion = (
                 ai.pick_the_product(product_to_buy, available_products, products_feed)
             )
-            time.sleep(10)
+            time.sleep(5)
 
             if store_product_id:
                 add_to_cart(
