@@ -19,7 +19,7 @@ jobs:
 
     - name: Install Poetry
       run: |
-        curl -sSL https://install.python-poetry.org | python3 -
+        curl -sSL https://install.python-poetry.org | POETRY_VERSION=1.8.5 python3 -
 
     - name: Configure Poetry
       run: |
@@ -27,7 +27,7 @@ jobs:
 
     - name: Install dependencies
       run: |
-        poetry install
+        poetry install --no-root
 
     - name: Export dependencies to requirements.txt
       run: |

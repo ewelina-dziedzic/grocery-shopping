@@ -240,7 +240,6 @@ def shop(event, context):
                 product
                 for product in found_products
                 if product["product"].get("isAvailable")
-                and product["product"].get("isStocked")
             ]
             store_product_id, store_product_name, reason, price, priceAfterPromotion = (
                 ai.pick_the_product(product_to_buy, available_products, products_feed)
