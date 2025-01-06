@@ -192,7 +192,7 @@ def schedule(event, context):
         start_date = datetime.datetime.fromisoformat(delivery_window["startsAt"])
         end_date = datetime.datetime.fromisoformat(delivery_window["endsAt"])
         send_status_update(
-            f"✅ delivery is scheduled at {start_date.strftime("%A %d.%m.%Y %H:%M")}-{end_date.strftime("%H:%M")}"
+            f"✅ delivery is scheduled at {start_date.strftime("%A %d.%m.%Y %H:%M")}-{end_date.strftime("%H:%M")}, run /shop to populate the online store shopping cart"
         )
         return {
             "statusCode": 200,
@@ -205,22 +205,12 @@ def schedule(event, context):
 
 def shop(event, context):
     try:
-        # get products to buy from notion
-        products_to_buy = notion.get_grocery_list()
-
         # get products from todoist
         grocery_list = todoist.get_grocery_list()
-        for product_name, quantity in grocery_list.items():
-            products_to_buy[product_name] = quantity
-
-        # filter out products to buy locally
-        products_to_buy = {
-            product_name: quantity
-            for product_name, quantity in products_to_buy.items()
-            if not product_name.startswith("local")
-        }
-
-        print("GROCERY LIST", products_to_buy)
+        
+        print("GROCERY LIST")
+        for item in grocery_list:
+            print(f"- {item}")
 
         token_type, access_token, user_id = log_in()
         
@@ -232,9 +222,11 @@ def shop(event, context):
         clear_shopping_cart(token_type, access_token, user_id)
         products_feed = download_all_products()
 
-        for product_to_buy, quantity in products_to_buy.items():
+        tasks_to_complete = []
+
+        for product in grocery_list:
             found_products = search_product(
-                user_id, token_type, access_token, product_to_buy
+                user_id, token_type, access_token, product.name
             )
             available_products = [
                 product
@@ -242,32 +234,34 @@ def shop(event, context):
                 if product["product"].get("isAvailable")
             ]
             store_product_id, store_product_name, reason, price, priceAfterPromotion = (
-                ai.pick_the_product(product_to_buy, available_products, products_feed)
+                ai.pick_the_product(product.name, available_products, products_feed)
             )
             time.sleep(5)
 
             if store_product_id:
                 add_to_cart(
-                    user_id, token_type, access_token, store_product_id, quantity
+                    user_id, token_type, access_token, store_product_id, product.quantity
                 )
                 notion_logging.create_choice_log(
-                    product_to_buy,
+                    product.name,
                     grocery_shopping_id,
                     store_product_id,
                     store_product_name,
-                    quantity,
+                    product.quantity,
                     reason,
                     price,
                     priceAfterPromotion,
                 )
+                tasks_to_complete.append(product.task_id)
             else:
                 notion_logging.create_empty_choice_log(
-                    product_to_buy, grocery_shopping_id, quantity, reason
+                    product.name, grocery_shopping_id, product.quantity, reason
                 )
 
         notion_logging.update_grocery_shopping_log(
             grocery_shopping_id, datetime.datetime.now()
         )
+        todoist.complete_tasks(tasks_to_complete)
         send_status_update("✅ items successfully added to your cart")
         return {
             "statusCode": 200,

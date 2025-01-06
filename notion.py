@@ -2,6 +2,8 @@ import config
 import json
 import requests
 
+import todoist
+
 
 notion_secret = config.get_value("notion", "secret", is_secret=True)
 notion_database_id = config.get_value("notion", "ingredients_database_id")
@@ -35,3 +37,13 @@ def get_grocery_list():
         products_to_buy[ingredient_name] = ingredient_quantity or 1
 
     return products_to_buy
+
+
+def listify(event, context):
+    grocery_list = get_grocery_list()
+    for ingredient_name,quantity in grocery_list.items():
+        todoist.add_grocery_item(ingredient_name, quantity)
+
+
+if __name__ == "__main__":
+    listify(None, None)
