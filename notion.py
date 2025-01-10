@@ -1,6 +1,7 @@
 import config
 import json
 import requests
+from datetime import datetime, timedelta
 
 import todoist
 
@@ -8,9 +9,15 @@ import todoist
 notion_secret = config.get_value("notion", "secret", is_secret=True)
 notion_database_id = config.get_value("notion", "ingredients_database_id")
 
+class ShoppingListItem:
+    def __init__(self, name, quantity, needed_for_date):
+        self.name = name
+        self.quantity = quantity
+        self.needed_for_date = needed_for_date
+
 
 def get_grocery_list():
-    products_to_buy = {}
+    products_to_buy = []
     url = f"https://api.notion.com/v1/databases/{notion_database_id}/query"
     headers = {
         "Authorization": f"Bearer {notion_secret}",
@@ -34,15 +41,24 @@ def get_grocery_list():
             "plain_text"
         ]
         ingredient_quantity = ingredient["properties"]["Quantity"]["number"]
-        products_to_buy[ingredient_name] = ingredient_quantity or 1
+        products_to_buy.append(
+            ShoppingListItem(
+                ingredient_name,
+                ingredient_quantity or 1,
+                ingredient["properties"]["Needed for date"]["formula"]["date"]["start"],
+            )
+        )
+        
 
     return products_to_buy
 
 
 def listify(event, context):
     grocery_list = get_grocery_list()
-    for ingredient_name,quantity in grocery_list.items():
-        todoist.add_grocery_item(ingredient_name, quantity)
+    for item in grocery_list:
+        needed_for_date = datetime.strptime(item.needed_for_date, "%Y-%m-%d")
+        due_date = needed_for_date - timedelta(days=1)
+        todoist.add_grocery_item(item.name, item.quantity, due_date.strftime("%Y-%m-%d"))
 
 
 if __name__ == "__main__":

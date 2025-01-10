@@ -53,12 +53,12 @@ def get_grocery_list():
     return products_to_buy
 
 
-def add_grocery_item(ingredient_name, quantity):
+def add_grocery_item(ingredient_name, quantity, due_date):
     url = f"https://api.todoist.com/rest/v2/tasks?project_id={todoist_project_id}"
     headers = {"Authorization": f"Bearer {todoist_secret}"}
-    data = {"content": f"{quantity}x {ingredient_name}"}
+    data = {"content": f"{quantity}x {ingredient_name}", "due_string": due_date}
     if quantity == 1:
-        data = {"content": ingredient_name}
+        data = {"content": ingredient_name, "due_string": due_date}
     response = requests.post(url, data=data, headers=headers)
     response.raise_for_status()
 
