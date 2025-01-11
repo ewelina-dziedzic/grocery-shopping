@@ -10,10 +10,11 @@ notion_secret = config.get_value("notion", "secret", is_secret=True)
 notion_database_id = config.get_value("notion", "ingredients_database_id")
 
 class ShoppingListItem:
-    def __init__(self, name, quantity, needed_for_date):
+    def __init__(self, name, quantity, needed_for_date, store_link):
         self.name = name
         self.quantity = quantity
         self.needed_for_date = needed_for_date
+        self.store_link = store_link
 
 
 def get_grocery_list():
@@ -46,6 +47,7 @@ def get_grocery_list():
                 ingredient_name,
                 ingredient_quantity or 1,
                 ingredient["properties"]["Needed for date"]["formula"]["date"]["start"],
+                ingredient["properties"]["Frisco"]["formula"]["string"],
             )
         )
         
@@ -58,7 +60,7 @@ def listify(event, context):
     for item in grocery_list:
         needed_for_date = datetime.strptime(item.needed_for_date, "%Y-%m-%d")
         due_date = needed_for_date - timedelta(days=1)
-        todoist.add_grocery_item(item.name, item.quantity, due_date.strftime("%Y-%m-%d"))
+        todoist.add_grocery_item(item.name, item.quantity, due_date.strftime("%Y-%m-%d"), item.store_link)
 
 
 if __name__ == "__main__":
