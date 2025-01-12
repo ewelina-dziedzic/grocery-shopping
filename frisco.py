@@ -192,7 +192,7 @@ def schedule(event, context):
         start_date = datetime.datetime.fromisoformat(delivery_window["startsAt"])
         end_date = datetime.datetime.fromisoformat(delivery_window["endsAt"])
         send_status_update(
-            f"✅ delivery is scheduled at {start_date.strftime("%A %d.%m.%Y %H:%M")}-{end_date.strftime("%H:%M")}, run /shop to populate the online store shopping cart"
+            f"✅ delivery is scheduled at {start_date.strftime("%A %d.%m.%Y %H:%M")}-{end_date.strftime("%H:%M")}"
         )
         return {
             "statusCode": 200,
