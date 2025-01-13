@@ -42,11 +42,15 @@ def get_grocery_list():
             "plain_text"
         ]
         ingredient_quantity = ingredient["properties"]["Quantity"]["number"]
+        needed_for_date = None
+        if "date" in ingredient["properties"]["Needed for date"]["formula"]:
+            needed_for_date = ingredient["properties"]["Needed for date"]["formula"]["date"]["start"]
+
         products_to_buy.append(
             ShoppingListItem(
                 ingredient_name,
                 ingredient_quantity or 1,
-                ingredient["properties"]["Needed for date"]["formula"]["date"]["start"],
+                needed_for_date,
                 ingredient["properties"]["Frisco"]["formula"]["string"],
             )
         )
@@ -58,9 +62,12 @@ def get_grocery_list():
 def listify(event, context):
     grocery_list = get_grocery_list()
     for item in grocery_list:
-        needed_for_date = datetime.strptime(item.needed_for_date, "%Y-%m-%d")
-        due_date = needed_for_date - timedelta(days=1)
-        todoist.add_grocery_item(item.name, item.quantity, due_date.strftime("%Y-%m-%d"), item.store_link)
+        if item.needed_for_date:
+            needed_for_date = datetime.fromisoformat(item.needed_for_date)
+            due_date = needed_for_date - timedelta(days=1)
+            todoist.add_grocery_item(item.name, item.quantity, due_date.strftime("%Y-%m-%d"), item.store_link)
+        else:
+            todoist.add_grocery_item(item.name, item.quantity, "", item.store_link)
 
 
 if __name__ == "__main__":
