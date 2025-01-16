@@ -7,7 +7,6 @@ import pytz
 import ai
 import config
 import notion_logging
-import notion
 import todoist
 
 

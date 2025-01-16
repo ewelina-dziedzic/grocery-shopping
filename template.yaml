@@ -6,7 +6,7 @@ Resources:
   GroceryShoppingShopFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: ./
+      CodeUri: ./grocery_shopping/
       Handler: frisco.schedule
       Runtime: python3.12
       Timeout: 900
@@ -37,7 +37,7 @@ Resources:
   GroceryShoppingScheduleFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: ./
+      CodeUri: ./grocery_shopping/
       Handler: frisco.shop
       Runtime: python3.12
       Timeout: 900
@@ -68,7 +68,7 @@ Resources:
   GroceryShoppingListifyFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: ./
+      CodeUri: ./grocery_shopping/
       Handler: notion.listify
       Runtime: python3.12
       Timeout: 900

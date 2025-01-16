@@ -1,8 +1,8 @@
-import config
 import json
 import requests
 from datetime import datetime, timedelta
 
+import config
 import todoist
 
 

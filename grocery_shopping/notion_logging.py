@@ -1,7 +1,7 @@
-import config
 import json
 import requests
 
+import config
 
 NOTION_SECRET = config.get_value("notion", "secret", is_secret=True)
 NOTION_STRATEGY_DATABASE_ID = config.get_value("notion", "strategy_database_id")

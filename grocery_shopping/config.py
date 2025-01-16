@@ -6,9 +6,9 @@ ssm = boto3.client("ssm")
 config = configparser.ConfigParser()
 local_file = False
 
-if os.path.isfile("config.ini"):
+if os.path.isfile("../config.ini"):
     local_file = True
-    config.read("config.ini")
+    config.read("../config.ini")
 
 
 def get_value(category, key, is_secret=False):

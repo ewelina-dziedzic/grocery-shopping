@@ -1,7 +1,8 @@
-import config
 import json
 import time
 from openai import OpenAI
+
+import config
 
 
 OPENAI_SECRET = config.get_value("openai", "secret", is_secret=True)

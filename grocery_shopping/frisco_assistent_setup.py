@@ -1,7 +1,7 @@
-import config
 import requests
 
 import ai
+import config
 import frisco
 
 
