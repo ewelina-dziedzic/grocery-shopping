@@ -14,6 +14,10 @@ boto3 = "^1.35.54"
 [tool.poetry.group.dev.dependencies]
 pytest = "^5.2"
 black = "^24.10.0"
+mypy = "^1.14.1"
+types-requests = "^2.32.0.20241016"
+types-pytz = "^2024.2.0.20241221"
+types-boto3 = "^1.36.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

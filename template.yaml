@@ -3,14 +3,38 @@ Transform: AWS::Serverless-2016-10-31
 Description: Grocery Shopping Lambda Functions
 
 Resources:
-  GroceryShoppingShopFunction:
+  GroceryShoppingListifyFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: ./grocery_shopping/
-      Handler: frisco.schedule
+      CodeUri: .
+      Handler: main.listify
       Runtime: python3.12
       Timeout: 900
-      MemorySize: 512
+      MemorySize: 128
+      FunctionName: grocery-shopping-listify
+      ReservedConcurrentExecutions: 1
+      EventInvokeConfig:
+        MaximumRetryAttempts: 0
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - ssm:GetParameter
+              Resource:
+                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/notion/secret"
+                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/notion/ingredients_database_id"
+                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/todoist/secret"
+                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/todoist/project_id"
+                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/make/status_update_webhook"
+
+  GroceryShoppingScheduleFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .
+      Handler: main.schedule
+      Runtime: python3.12
+      Timeout: 900
+      MemorySize: 128
       FunctionName: grocery-shopping-schedule
       ReservedConcurrentExecutions: 1
       EventInvokeConfig:
@@ -23,25 +47,16 @@ Resources:
               Resource:
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/frisco/username"
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/frisco/password"
-                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/notion/secret"
-                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/notion/ingredients_database_id"
-                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/notion/strategy_database_id"
-                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/notion/grocery_shopping_database_id"
-                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/notion/choice_database_id"
-                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/todoist/secret"
-                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/todoist/project_id"
-                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/openai/secret"
-                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/openai/grocery_shopping_assistant_id"
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/make/status_update_webhook"
 
-  GroceryShoppingScheduleFunction:
+  GroceryShoppingShopFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: ./grocery_shopping/
-      Handler: frisco.shop
+      CodeUri: .
+      Handler: main.shop
       Runtime: python3.12
       Timeout: 900
-      MemorySize: 256
+      MemorySize: 512
       FunctionName: grocery-shopping-shop
       ReservedConcurrentExecutions: 1
       EventInvokeConfig:
@@ -55,39 +70,6 @@ Resources:
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/frisco/username"
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/frisco/password"
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/notion/secret"
-                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/notion/ingredients_database_id"
-                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/notion/strategy_database_id"
-                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/notion/grocery_shopping_database_id"
-                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/notion/choice_database_id"
-                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/todoist/secret"
-                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/todoist/project_id"
-                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/openai/secret"
-                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/openai/grocery_shopping_assistant_id"
-                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/make/status_update_webhook"
-
-  GroceryShoppingListifyFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: ./grocery_shopping/
-      Handler: notion.listify
-      Runtime: python3.12
-      Timeout: 900
-      MemorySize: 256
-      FunctionName: grocery-shopping-listify
-      ReservedConcurrentExecutions: 1
-      EventInvokeConfig:
-        MaximumRetryAttempts: 0
-      Policies:
-        - Statement:
-            - Effect: Allow
-              Action:
-                - ssm:GetParameter
-              Resource:
-                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/frisco/username"
-                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/frisco/password"
-                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/notion/secret"
-                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/notion/ingredients_database_id"
-                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/notion/strategy_database_id"
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/notion/grocery_shopping_database_id"
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/notion/choice_database_id"
                 - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/todoist/secret"
