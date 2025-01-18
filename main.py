@@ -27,6 +27,9 @@ def schedule(event: Dict[str, Any], context: Any):
     notifier = Notifier(config_provider)
 
     try:
+        if "preferred_start_time" not in event:
+            raise ValueError("Missing 'preferred_start_time' in event")
+        
         preferred_start_time = event["preferred_start_time"]
         store = shopping.Store(config_provider)
         user = store.log_in()

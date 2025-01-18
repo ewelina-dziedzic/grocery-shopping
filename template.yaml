@@ -8,7 +8,7 @@ Resources:
     Properties:
       CodeUri: .
       Handler: main.listify
-      Runtime: python3.12
+      Runtime: python3.13
       Timeout: 900
       MemorySize: 128
       FunctionName: grocery-shopping-listify
@@ -32,7 +32,7 @@ Resources:
     Properties:
       CodeUri: .
       Handler: main.schedule
-      Runtime: python3.12
+      Runtime: python3.13
       Timeout: 900
       MemorySize: 128
       FunctionName: grocery-shopping-schedule
@@ -54,7 +54,7 @@ Resources:
     Properties:
       CodeUri: .
       Handler: main.shop
-      Runtime: python3.12
+      Runtime: python3.13
       Timeout: 900
       MemorySize: 512
       FunctionName: grocery-shopping-shop
